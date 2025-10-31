@@ -1,4 +1,4 @@
-// main.js
+
 const fs = require('fs').promises;
 const path = require('path');
 const http = require('http');
@@ -16,19 +16,19 @@ program
 program.parse(process.argv);
 const opts = program.opts();
 
-// === Перевірка існування файлу (точний текст помилки з ТЗ) ===
+
 const inputPath = path.resolve(opts.input);
 
 async function ensureInputExists() {
   try {
     await fs.access(inputPath);
   } catch {
-    console.error('Cannot find input file'); // має бути саме так
+    console.error('Cannot find input file'); 
     process.exit(1);
   }
 }
 
-// === Допоміжні: безпечний парсер JSON і нормалізація ===
+
 function toLowerSafe(v) {
   return typeof v === 'string' ? v.toLowerCase() : v;
 }
@@ -45,10 +45,7 @@ function parseJsonSafe(text) {
   }
 }
 
-// === Основна логіка фільтрації під варіант 3 ===
-// Параметри запиту:
-//   ?furnished=true      -> залишити лише furnishingstatus === 'furnished' (без урах. регістру)
-//   ?max_price=X         -> залишити лише price < X
+
 function filterHouses(rows, query) {
   let filtered = rows;
 
@@ -65,7 +62,7 @@ function filterHouses(rows, query) {
     }
   }
 
-  // Формуємо лише потрібні поля: price, area, furnishingstatus
+
   return filtered.map((row) => ({
     price: Number(row.price),
     area: Number(row.area),
@@ -73,19 +70,19 @@ function filterHouses(rows, query) {
   }));
 }
 
-// === Побудова XML ===
+
 const builder = new XMLBuilder({
-  format: true,           // красиво відформатований XML
+  format: true,           
   ignoreAttributes: true
 });
 
 function toXml(houses) {
-  // структура <houses><house>...</house></houses>
+  
   const xmlObj = { houses: { house: houses } };
   return builder.build(xmlObj);
 }
 
-// === HTTP-сервер ===
+
 async function start() {
   await ensureInputExists();
 
@@ -93,14 +90,14 @@ async function start() {
     try {
       const { query } = url.parse(req.url, true);
 
-      // читаємо JSON щоразу (вимога: асинхронне readFile)
+     
       const jsonText = await fs.readFile(inputPath, 'utf-8');
       const rows = parseJsonSafe(jsonText);
 
       const result = filterHouses(rows, query);
       const xml = toXml(result);
 
-      // збережемо останню відповідь у файл (асинхронне writeFile — вимога)
+      
       await fs.writeFile(path.resolve('last-response.xml'), xml, 'utf-8');
 
       res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8' });
